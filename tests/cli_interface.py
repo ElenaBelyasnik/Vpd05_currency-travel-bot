@@ -234,38 +234,51 @@ def main():
     DB_PATH.parent.mkdir(exist_ok=True)
     db = Database(str(DB_PATH))
     
-    # Создаём таблицы
-    db.create_table("users", """
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    """)
+        # Создаём таблицы (только если их нет)
+    tables_created = False
     
-    db.create_table("trips", """
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        country_from TEXT NOT NULL,
-        currency_from TEXT NOT NULL,
-        country_to TEXT NOT NULL,
-        currency_to TEXT NOT NULL,
-        exchange_rate REAL NOT NULL,
-        initial_amount_from REAL NOT NULL,
-        initial_amount_to REAL NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        is_active INTEGER DEFAULT 1,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    """)
+    if not db.table_exists("users"):
+        db.create_table("users", """
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_id INTEGER UNIQUE NOT NULL,
+            username TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """)
+        tables_created = True
     
-    db.create_table("expenses", """
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        trip_id INTEGER NOT NULL,
-        amount_from REAL NOT NULL,
-        amount_to REAL NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (trip_id) REFERENCES trips (id)
-    """)
+    if not db.table_exists("trips"):
+        db.create_table("trips", """
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            country_from TEXT NOT NULL,
+            currency_from TEXT NOT NULL,
+            country_to TEXT NOT NULL,
+            currency_to TEXT NOT NULL,
+            exchange_rate REAL NOT NULL,
+            initial_amount_from REAL NOT NULL,
+            initial_amount_to REAL NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active INTEGER DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        """)
+        tables_created = True
+    
+    if not db.table_exists("expenses"):
+        db.create_table("expenses", """
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trip_id INTEGER NOT NULL,
+            amount_from REAL NOT NULL,
+            amount_to REAL NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trip_id) REFERENCES trips (id)
+        """)
+        tables_created = True
+    
+    if tables_created:
+        print_success("Структура БД создана")
+    else:
+        print_info("Структура БД уже существует")
     
     user_id = get_user_id(db)
     print_success(f"БД готова, пользователь ID={user_id}")
