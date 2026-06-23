@@ -32,17 +32,29 @@ def get_supported_countries() -> list:
     return sorted(supported)
 
 
-def get_valid_country(prompt: str) -> str:
-    """Запрашивает страну и проверяет поддержку."""
+def get_valid_country(prompt: str, default: str = None) -> str:
+    """Запрашивает страну и проверяет поддержку. Если default задан и пользователь нажал Enter — возвращает default."""
     supported = get_supported_countries()
     while True:
-        country = input(f"{Fore.YELLOW}{prompt}: {Fore.WHITE}").strip()
-        if not country:
+        user_input = input(f"{Fore.YELLOW}{prompt}: {Fore.WHITE}").strip()
+        
+        # Если пользователь нажал Enter и есть default
+        if not user_input and default:
+            if default in supported:
+                print_info(f"Выбрана страна по умолчанию: {default}")
+                return default
+            else:
+                print_error(f"Страна по умолчанию '{default}' не поддерживается API")
+                continue
+        
+        if not user_input:
             print_error("Название страны не может быть пустым")
             continue
-        if country in supported:
-            return country
-        print_error(f"Страна '{country}' не найдена или не поддерживается API")
+            
+        if user_input in supported:
+            return user_input
+        
+        print_error(f"Страна '{user_input}' не найдена или не поддерживается API")
         print_supported_countries(supported)
 
 
@@ -100,7 +112,7 @@ def menu_create_trip(db: Database, user_id: int) -> None:
     """Создаёт новое путешествие."""
     print_header("СОЗДАНИЕ ПУТЕШЕСТВИЯ")
 
-    country_from = get_valid_country("Введите страну отправления")
+    country_from = get_valid_country("Введите страну отправления", default="Россия")
     country_to = get_valid_country("Введите страну назначения")
 
     currency_from = COUNTRY_TO_CURRENCY[country_from]
@@ -172,7 +184,18 @@ def menu_my_trips(db: Database, user_id: int) -> None:
         print_success(f"Активное путешествие переключено на ID={trip_id}")
         trip = db.fetch_one("SELECT * FROM trips WHERE id = ?", (trip_id,))
         if trip:
-            print_balance(trip)
+            # Показываем баланс после переключения
+            rest = db.fetch_one("""
+                SELECT 
+                    t.initial_amount_from - COALESCE(SUM(e.amount_from), 0) AS rest_from,
+                    t.initial_amount_to - COALESCE(SUM(e.amount_to), 0) AS rest_to
+                FROM trips t
+                LEFT JOIN expenses e ON t.id = e.trip_id
+                WHERE t.id = ?
+                GROUP BY t.id
+            """, (trip['id'],))
+            if rest:
+                print_balance(trip, rest['rest_from'], rest['rest_to'])
     except ValueError:
         print_error("Введите число")
 
@@ -312,7 +335,6 @@ def menu_change_rate(db: Database, user_id: int) -> None:
         return
 
     print_info(f"Текущий курс: 1 {trip['currency_from']} = {trip['exchange_rate']:.4f} {trip['currency_to']}")
-    print_info(f"Текущий баланс: {trip['initial_amount_from']:.2f} {trip['currency_from']} / {trip['initial_amount_to']:.2f} {trip['currency_to']}")
 
     while True:
         rate_str = input(f"{Fore.YELLOW}Введите новый курс (1 {trip['currency_from']} = X {trip['currency_to']}): {Fore.WHITE}").strip()
@@ -328,7 +350,7 @@ def menu_change_rate(db: Database, user_id: int) -> None:
         except ValueError:
             print_error("Введите число")
 
-    # Пересчитываем баланс в валюте назначения
+    # Пересчитываем начальную сумму в валюте назначения
     new_initial_to = trip['initial_amount_from'] * new_rate
 
     db.update_one(
@@ -339,11 +361,21 @@ def menu_change_rate(db: Database, user_id: int) -> None:
     )
 
     print_success(f"Курс обновлён: 1 {trip['currency_from']} = {new_rate:.4f} {trip['currency_to']}")
-    print_info(f"Баланс пересчитан: {trip['initial_amount_from']:.2f} {trip['currency_from']} = {new_initial_to:.2f} {trip['currency_to']}")
+    print_info(f"Начальная сумма пересчитана: {trip['initial_amount_from']:.2f} {trip['currency_from']} = {new_initial_to:.2f} {trip['currency_to']}")
 
     trip_updated = db.fetch_one("SELECT * FROM trips WHERE id = ?", (trip['id'],))
     if trip_updated:
-        print_balance(trip_updated)
+        rest = db.fetch_one("""
+            SELECT 
+                t.initial_amount_from - COALESCE(SUM(e.amount_from), 0) AS rest_from,
+                t.initial_amount_to - COALESCE(SUM(e.amount_to), 0) AS rest_to
+            FROM trips t
+            LEFT JOIN expenses e ON t.id = e.trip_id
+            WHERE t.id = ?
+            GROUP BY t.id
+        """, (trip['id'],))
+        if rest:
+            print_balance(trip_updated, rest['rest_from'], rest['rest_to'])
 
 
 def menu_clear_all(db: Database, user_id: int) -> None:

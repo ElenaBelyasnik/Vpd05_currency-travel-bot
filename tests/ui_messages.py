@@ -39,6 +39,9 @@ def print_balance(trip: dict, rest_from: float = None, rest_to: float = None) ->
         print_error("Для отображения баланса нужны рассчитанные остатки")
         return
 
+    # Выводим информацию о путешествии
+    print(f"\n{Fore.CYAN}Активное путешествие: {trip['country_from']} → {trip['country_to']}")
+
     currency_from = trip.get('currency_from', '')
     currency_to = trip.get('currency_to', '')
     rate = trip.get('exchange_rate', 1)
