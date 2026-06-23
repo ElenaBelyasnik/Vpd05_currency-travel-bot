@@ -99,3 +99,61 @@ def print_supported_countries(countries: list) -> None:
     print(f"\n{Fore.CYAN}Доступные страны (поддерживаемые API):")
     for i in range(0, len(countries), 5):
         print(f"  {Fore.WHITE}{', '.join(countries[i:i+5])}")
+
+def get_supported_countries() -> list:
+    """Возвращает список стран, поддерживаемых API."""
+    # Импортируем здесь, чтобы избежать циклических импортов
+    from convert_currency.currency_util import CURRENCIES, COUNTRY_TO_CURRENCY
+    supported = []
+    for country, code in COUNTRY_TO_CURRENCY.items():
+        if code in CURRENCIES:
+            supported.append(country)
+    return sorted(supported)
+
+
+def get_valid_country(prompt: str, default: str = None) -> str:
+    """Запрашивает страну и проверяет поддержку. Если default задан и пользователь нажал Enter — возвращает default."""
+    supported = get_supported_countries()
+    while True:
+        # Изменённая строка — добавлена подсказка с default
+        if default:
+            user_input = input(f"{Fore.YELLOW}{prompt} (по умолчанию {default} - нажмите Enter): {Fore.WHITE}").strip()
+        else:
+            user_input = input(f"{Fore.YELLOW}{prompt}: {Fore.WHITE}").strip()
+        
+        # Если пользователь нажал Enter и есть default
+        if not user_input and default:
+            if default in supported:
+                print_info(f"Выбрана страна по умолчанию: {default}")
+                return default
+            else:
+                print_error(f"Страна по умолчанию '{default}' не поддерживается API")
+                continue
+        
+        if not user_input:
+            print_error("Название страны не может быть пустым")
+            continue
+            
+        if user_input in supported:
+            return user_input
+        
+        print_error(f"Страна '{user_input}' не найдена или не поддерживается API")
+        print_supported_countries(supported)
+
+
+def get_valid_amount(prompt: str) -> float:
+    """Запрашивает сумму и проверяет, что это число > 0."""
+    from colorama import Fore
+    while True:
+        amount_str = input(f"{Fore.YELLOW}{prompt}: {Fore.WHITE}").strip()
+        if not amount_str:
+            print_error("Сумма не может быть пустой")
+            continue
+        try:
+            amount = float(amount_str.replace(',', '.'))
+            if amount <= 0:
+                print_error("Сумма должна быть больше 0")
+                continue
+            return amount
+        except ValueError:
+            print_error("Сумма должна быть числом (например, 1000 или 1000.50)")
