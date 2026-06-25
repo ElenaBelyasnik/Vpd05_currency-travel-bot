@@ -94,6 +94,34 @@ def register_handlers(bot, db, USER_ID):
             import traceback
             traceback.print_exc()
 
+    @bot.message_handler(commands=['newtrip'])
+    def cmd_newtrip(message):
+        print("🔍 [NEWTRIP] Команда /newtrip — запуск создания путешествия")
+        safe_delete_message(message.chat.id, message.message_id)
+        
+        active = get_active_trip(db, USER_ID)
+        if active:
+            safe_send_message(
+                message.chat.id,
+                f"⚠️ У тебя уже есть активное путешествие:\n"
+                f"{active['country_from']} → {active['country_to']}\n\n"
+                f"При создании нового оно станет активным автоматически.\n"
+                f"Продолжить?",
+                reply_markup=InlineKeyboardMarkup().add(
+                    InlineKeyboardButton("✅ Да, создать", callback_data="create_force"),
+                    InlineKeyboardButton("❌ Отмена", callback_data="back_to_menu")
+                )
+            )
+        else:
+            safe_send_message(
+                message.chat.id,
+                "🌍 *Создание нового путешествия*\n\n"
+                "Выберите страну отправления:",
+                reply_markup=country_choice_keyboard(),
+                parse_mode="Markdown"
+            )
+        set_state(message.chat.id, TravelStates.WAITING_COUNTRY_FROM)
+
     # ==================== CALLBACK: НАВИГАЦИЯ ====================
 
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_menu")
