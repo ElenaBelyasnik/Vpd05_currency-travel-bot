@@ -29,7 +29,7 @@ def get_supported_countries() -> list:
 
 
 def get_user_id(db: Database) -> int:
-    """Получает ID тестового пользователя. Если нет — создаёт."""
+    """Получает или создаёт тестового пользователя. Возвращает DB ID."""
     TEST_TELEGRAM_ID = 1
     TEST_USERNAME = "TestUser"
     

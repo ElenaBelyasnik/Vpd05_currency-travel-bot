@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 CLI-интерфейс для тестирования бизнес-логики путешествий.
-Запуск: python tests/cli_interface.py
+Запуск: python frontend/cli_interface.py
 """
 
 import sys
 import logging
 from pathlib import Path
 
+# Добавляем корневую папку проекта в sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from colorama import init, Fore
@@ -38,7 +39,6 @@ DB_PATH = Path(__file__).parent.parent / "database" / "travel_bot.db"
 
 
 # ==================== ОБЁРТКИ ДЛЯ CLI ====================
-# Эти функции связывают бизнес-логику с UI
 
 def cli_create_trip(db: Database, user_id: int) -> None:
     """CLI-обёртка для создания путешествия."""
@@ -234,7 +234,7 @@ def main():
     DB_PATH.parent.mkdir(exist_ok=True)
     db = Database(str(DB_PATH))
     
-        # Создаём таблицы (только если их нет)
+    # Создаём таблицы (только если их нет)
     tables_created = False
     
     if not db.table_exists("users"):
@@ -280,7 +280,7 @@ def main():
     else:
         print_info("Структура БД уже существует")
     
-    user_id = get_user_id(db)
+    user_id = get_user_id(db, 1)  # CLI использует тестового пользователя с telegram_id=1
     print_success(f"БД готова, пользователь ID={user_id}")
     
     # Главное меню
