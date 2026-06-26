@@ -211,10 +211,10 @@ def cli_clear_all(db: Database, user_id: int) -> None:
         print_info("База данных уже пуста")
         return
     
-    print(f"{Fore.RED}⚠️  ВНИМАНИЕ! Будут удалены ВСЕ данные:")
-    print(f"  Пользователи: {count_users}")
+    print(f"{Fore.RED}⚠️  ВНИМАНИЕ! Будут удалены все путешествия и расходы:")
     print(f"  Путешествия: {count_trips}")
     print(f"  Расходы: {count_expenses}")
+    print(f"  Данные пользователей будут сохранены.")
     
     answer = input(f"{Fore.YELLOW}Продолжить? (Y/n): {Fore.WHITE}").strip().lower()
     if answer and answer not in ('y', 'да', 'yes', ''):

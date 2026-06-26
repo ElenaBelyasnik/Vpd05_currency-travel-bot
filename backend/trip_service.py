@@ -188,8 +188,7 @@ def change_rate(db: Database, trip_id: int, new_rate: float) -> dict:
 
 
 def clear_all_data(db: Database) -> None:
-    """Очищает все таблицы."""
+    """Очищает таблицы trips и expenses, сохраняя пользователей."""
     db.delete_all("expenses")
     db.delete_all("trips")
-    db.delete_all("users")
     db.vacuum()
